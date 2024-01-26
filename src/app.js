@@ -16,7 +16,7 @@ const docRef=await addDoc(collection(db,"messages"),message); //read data fireba
 function createMessage(){
     const message=document.querySelector('#message').value;
     const username= document.querySelector('#nickname').value; 
-    const date=Timestamp.now().getHours();
+    const date=Timestamp.fromDate(new Date());
     return {message,username,date}; 
 }
 
@@ -34,10 +34,10 @@ function displayMessage(message){
     const messageHTML=/*html*/`
         <div id="messages" class="messages">
           <div class="message">
-            <i class="fas fa-user"></i>
+            <i class="fas fa-user"></i> 
             <div>
               <span class="username">${message.username}
-                <time>${message.date}</time>
+                <time>${message.date.toDate().toLocaleString()}</time>
               </span>
               <br />
               <span class="message-text">${message.message}</span>
