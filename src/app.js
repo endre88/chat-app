@@ -1,14 +1,14 @@
 import './scss/style.scss';
 import config from './db_config.js';
 import {initializeApp} from 'firebase/app'
-import {getFirestore, collection, addDoc, doc, Timestamp} from 'firebase/firestore'
+import {getFirestore, collection, addDoc, Timestamp, query, orderBy,getDocs} from 'firebase/firestore'
 
 const app= initializeApp(config)
 
 const db=getFirestore(app)
 
 async function sendMessage(message){
-const docRef=await addDoc(collection(db,"messages"),message);
+const docRef=await addDoc(collection(db,"messages"),message); //read data firebase
 console.log('Document written witht ID: ', docRef.id)
 }
 
@@ -17,6 +17,16 @@ function createMessage(){
     const username= document.querySelector('#nickname').value; 
     const date=Timestamp.now();
     return {message:message,username,date};
+}
+
+/** dowloads all messages from databes and display them ordereb by date*/
+async function displayAllMessages(){
+  const q=query(collection(db,'messages'), orderBy('date', 'desc'));
+const messages= await getDocs(q);
+document.querySelector('#messages').innerHTML='';
+messages.forEach((doc)=>{
+  displayMessage(doc.data());
+})
 }
 
 function displayMessage(message){
@@ -37,7 +47,7 @@ function displayMessage(message){
             </div>
           </div>
           `;
-      document.querySelector('#messeges').insertAdjacentHTML('beforeend', messageHTML);
+      document.querySelector('#messages').insertAdjacentHTML('beforeend', messageHTML);
 }
 
 
@@ -46,3 +56,5 @@ document.querySelector('#send').addEventListener('click',()=>{
     const message=createMessage();
     if (message.message&&message.username) sendMessage(message);
 })
+
+window.addEventListener('DOMContentLoaded',()=> { displayAllMessages();})
