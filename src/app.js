@@ -1,7 +1,7 @@
 import './scss/style.scss';
 import config from './db_config.js';
 import {initializeApp} from 'firebase/app';
-import {getFirestore, collection, addDoc, Timestamp, query, orderBy,getDocs, onSnapshot, doc, deleteDoc} from 'firebase/firestore'
+import {getFirestore, collection, addDoc, Timestamp, query, orderBy,getDocs, onSnapshot, doc, deleteDoc, updateDoc} from 'firebase/firestore'
 import scrollIntoView from 'scroll-into-view-if-needed';
 
 const app= initializeApp(config)
@@ -10,7 +10,6 @@ const db=getFirestore(app)
 
 async function sendMessage(message){
 const docRef=await addDoc(collection(db,"messages"),message); 
-//return docRef;//read data firebase
 }
 
 function createMessage(){
@@ -52,14 +51,20 @@ function displayMessage(message,id){
         scrollMode:'if-needed',
         block:'end'
       });
+
       document.querySelector(`[data-id="${id}"] .fa-trash-alt`).addEventListener('click', ()=>
       {deleteMessage(id);});
+
+      document.querySelector(`[data-id="${id}"] .fa-pen`).addEventListener('click', ()=>
+      {displayEditMessage(id);});
+
 }
 
 function handleSubmit(){
   const message=createMessage();
   if (message.message&&message.username) {
   sendMessage(message);
+  document.querySelector('#message').value=""; //Amint rányomtunk a send gombra legyen üres az üzenet mező
 }
 }
 
@@ -77,7 +82,7 @@ onSnapshot(collection(db,'messages'),(snapshot)=>{
     if (change.type ==='added'){
       displayMessage(change.doc.data(),change.doc.id);}
     if (change.type ==='modified'){
-      console.log('Modified');
+      //displayEditMessage(change.doc.id) ?? Nem értem, hogy miért nem kell
     }
     if (change.type ==='removed'){
       removeMessage(change.doc.id);
@@ -93,6 +98,43 @@ async function deleteMessage(id){
   const docRef = doc(db,'messages', id);
   await deleteDoc(docRef);
   //a firebase adatbázisból törli a bejegyzést törlendő ID-val
+}
+
+async function displayEditMessage(id){
+  const editPopupHTML = /*html*/ `
+  <div class="popup-container" id="popup">
+    <div class="edit-message" id="edit-message" data-id="${id}">
+      <div id="close-popup" class="button">
+        Close <i class="fa fa-window-close" aria-hidden="true"></i>
+      </div>
+      <textarea id="edit" name="" cols="30" rows="10">${document
+        .querySelector(`.message[data-id="${id}"] .message-text`)
+        .textContent.trim()}</textarea>
+      <div id="save-message" class="button">
+        Save message<i class="fas fa-save"></i>
+      </div>
+    </div>
+  </div>
+`;
+document.querySelector('#app').insertAdjacentHTML('beforeend', editPopupHTML);
+
+//üzenet szöveg módosítás
+document.querySelector('#save-message').addEventListener('click', ()=>{
+  const modMessage= document.querySelector(`#edit`).value
+  document.querySelector(`.message[data-id="${id}"] .message-text`).textContent = modMessage;
+  document.querySelector('#popup').outerHTML="";
+  modifyMessage(id, modMessage);
+  
+})
+//popup bezárás
+  document.querySelector("#edit-message #close-popup").addEventListener('click', ()=>{
+  document.querySelector("#popup").outerHTML="";
+})
+}
+
+async function modifyMessage(id,message){
+  const docRef = doc(db,'messages', id);
+  await updateDoc(docRef,{message});
 }
 
 window.addEventListener('DOMContentLoaded',()=> { displayAllMessages();})
